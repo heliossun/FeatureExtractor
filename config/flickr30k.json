@@ -1,0 +1,7 @@
+{
+  "dataname" : "f30k",
+  "val_txt_db": "/txt/itm_flickr30k_val.db",
+  "val_img_db": "/img/flickr30k/",
+  "model": "openai/clip-vit-base-patch32",
+  "single_caption": true
+}
