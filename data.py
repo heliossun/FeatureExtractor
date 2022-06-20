@@ -46,6 +46,8 @@ class CocoDataset():
         for i in range(self.size):
             caption, image = self.get_raw_item(i)
             captions.append(caption)
+            if self.transform is not None:
+                image = self.transform(image)
             images.append(image)
 
 
@@ -110,7 +112,7 @@ def get_data(data_name, root, json, batch_size):
         # COCO custom dataset
         dataset = CocoDataset(root = root,
                                json = json,
-                               transform = None).items()
+                               transform = transform).items()
     elif 'f30k' in data_name:
         dataset = Flickr30k(root=root,
                             ann_file = json,
