@@ -9,20 +9,21 @@ import torchvision.transforms as transforms
 from torchvision.datasets.coco import CocoCaptions
 from torchvision.datasets.flickr import Flickr30k, Flickr8k
 from PIL import Image
-
+import json
 def get_transform():
-    normalizer = transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                                      std=[0.229, 0.224, 0.225])
+    normalizer = transforms.Normalize(mean=[0.48145466, 0.4578275, 0.40821073],
+                                      std=[0.26862954, 0.26130258, 0.27577711])
     t_list = [transforms.Resize(256), transforms.CenterCrop(224)]
 
     t_end = [transforms.ToTensor(), normalizer]
     transform = transforms.Compose(t_list + t_end)
+
     return transform
 
 class CocoDataset():
     """COCO Custom Dataset compatible with torch.utils.data.DataLoader."""
 
-    def __init__(self, root, json, transform=None, ids=None, size=1000):
+    def __init__(self, root, json, transform=None, ids=None):
         """
         Args:
             root: image directory.
@@ -37,29 +38,28 @@ class CocoDataset():
         else:
             self.ids = ids
         self.transform = transform
-        self.size = size
+
     def items(self):
-        """This function returns a tuple that is further passed to collate_fn
-        """
-        captions = []
-        images = []
-        for i in range(self.size):
-            caption, image = self.get_raw_item(i)
-            captions.append(caption)
-            if self.transform is not None:
-                image = self.transform(image)
-            images.append(image)
-
-
-        return images, captions
+        coco_pair = {}
+        for i in range(len(self.ids)):
+            caption, img_id, path = self.get_raw_item(i)
+            if img_id not in coco_pair.keys():
+                coco_pair[img_id]=[path,[]]
+            coco_pair[img_id][1].append(caption)
+        print("# of different images: ",len(coco_pair))
+        return coco_pair
 
     def get_raw_item(self, index):
+
         ann_id = self.ids[index]
+        #print(self.coco.anns[ann_id])
         caption = self.coco.anns[ann_id]['caption']
         img_id = self.coco.anns[ann_id]['image_id']
         path = self.coco.loadImgs(img_id)[0]['file_name']
-        image = Image.open(os.path.join(self.root, path)).convert('RGB')
-        return caption, image
+        #print(caption)
+        #print(img_id)
+        #image = Image.open(os.path.join(self.root, path)).convert('RGB')
+        return caption, img_id, path
 
 
 
@@ -68,55 +68,43 @@ class FlickrDataset(data.Dataset):
     Dataset loader for Flickr30k and Flickr8k full datasets.
     """
 
-    def __init__(self, root, json, split, vocab, transform=None):
+    def __init__(self, root, anno, transform=None):
         self.root = root
-        self.vocab = vocab
-        self.split = split
         self.transform = transform
-        self.dataset = jsonmod.load(open(json, 'r'))['images']
-        self.ids = []
-        for i, d in enumerate(self.dataset):
-            if d['split'] == split:
-                self.ids += [(i, x) for x in range(len(d['sentences']))]
+        self.ann = json.load(open(anno, 'r'))
 
-    def __getitem__(self, index):
+
+    def items(self):
         """This function returns a tuple that is further passed to collate_fn
         """
-        vocab = self.vocab
         root = self.root
-        ann_id = self.ids[index]
-        img_id = ann_id[0]
-        caption = self.dataset[img_id]['sentences'][ann_id[1]]['raw']
-        path = self.dataset[img_id]['filename']
-
-        image = Image.open(os.path.join(root, path)).convert('RGB')
-        if self.transform is not None:
-            image = self.transform(image)
-
-        # Convert caption (string) to word ids.
-        tokens = nltk.tokenize.word_tokenize(
-            str(caption).lower())
-        caption = []
-        caption.append(vocab('<start>'))
-        caption.extend([vocab(token) for token in tokens])
-        caption.append(vocab('<end>'))
-        target = torch.Tensor(caption)
-        return image, target, index, img_id
+        flickr_pair = {}
+        for i in range(len(self.ann)):
+            ann = self.ann[i]
+            if i not in flickr_pair.keys():
+                flickr_pair[i]=[ann['image'],ann['caption']]
+        print("# of different images: ",len(flickr_pair))
+        return flickr_pair
 
     def __len__(self):
         return len(self.ids)
 
 def get_data(data_name, root, json, batch_size):
     transform = get_transform()
-    if 'coco' in data_name:
+    if data_name =='coco' :
         # COCO custom dataset
+        dataset = CocoCaptions(root = root,
+                               annFile = json,
+                               transform = transform)
+        dataset = DataLoader(dataset, batch_size = batch_size)
+    elif data_name == 'coco_' :
         dataset = CocoDataset(root = root,
                                json = json,
-                               transform = transform).items()
+                               transform = None).items()
     elif 'f30k' in data_name:
-        dataset = Flickr30k(root=root,
-                            ann_file = json,
-                            transform=None)
+        dataset = FlickrDataset(root=root,
+                            anno = json,
+                            transform=None).items()
     elif 'f8k' in data_name:
         dataset = Flickr8k(root=root,
                             ann_file=json,
