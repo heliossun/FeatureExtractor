@@ -6,7 +6,6 @@ import numpy
 import time
 import numpy as np
 
-
 def encode_data(model, data_loader, log_step=10, logging=print):
     """Encode all images and captions loadable by `data_loader`
     """
@@ -27,7 +26,7 @@ def encode_data(model, data_loader, log_step=10, logging=print):
 
         # compute the embeddings
         img_emb, cap_emb, GCN_img_emd = model.forward_emb(images, captions, lengths,
-                                                          volatile=True)
+                                             volatile=True)
 
         # initialize the numpy arrays given the size of the embeddings
         if img_embs is None:
@@ -38,14 +37,16 @@ def encode_data(model, data_loader, log_step=10, logging=print):
         img_embs[ids] = img_emb.data.cpu().numpy().copy()
         cap_embs[ids] = cap_emb.data.cpu().numpy().copy()
 
+
         del images, captions
 
     return img_embs, cap_embs
 
-
 def i2t(images, captions, npts=None, measure='cosine', return_ranks=False):
+
     if npts is None:
         npts = images.shape[0]
+
 
     ranks = numpy.zeros(npts)
     top1 = numpy.zeros(npts)
@@ -57,18 +58,18 @@ def i2t(images, captions, npts=None, measure='cosine', return_ranks=False):
         # Compute scores
         d = numpy.dot(im, captions.T).flatten()
         inds = numpy.argsort(d)[::-1]
-
-        # print(inds)
+        
+        #print(inds)
         # Score
         rank = 1e20
         where = numpy.where(inds == index)
-        # print("where:  ", where)
+        #print("where:  ", where)
         tmp = where[0][0]
         if tmp < rank:
             rank = tmp
         ranks[index] = rank
         top1[index] = inds[0]
-    # print("ranks: ",ranks)
+    #print("ranks: ",ranks)
     # Compute metrics
     r1 = 100.0 * len(numpy.where(ranks < 1)[0]) / len(ranks)
     r5 = 100.0 * len(numpy.where(ranks < 5)[0]) / len(ranks)
@@ -82,6 +83,7 @@ def i2t(images, captions, npts=None, measure='cosine', return_ranks=False):
 
 
 def t2i(images, captions, npts=None, measure='cosine', return_ranks=False):
+
     if npts is None:
         npts = images.shape[0]
 

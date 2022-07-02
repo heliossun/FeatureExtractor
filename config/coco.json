@@ -1,0 +1,13 @@
+{
+  "dataname" : "coco_",
+  "root": "/data/Guohao/datasets/coco/images/val2017",
+  "anno": "/data/Guohao/datasets/coco/annotations/captions_val2017.json",
+  "model": "openai/clip-vit-large-patch14-336",
+  "single_caption": true,
+  "batch_size":1,
+  "model_name": "ViT-B/32",
+  "measure": "cosine",
+  "data_size":5000,
+  "feature_visual":false,
+  "arithmic":true
+}

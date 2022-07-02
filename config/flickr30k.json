@@ -1,7 +1,15 @@
 {
   "dataname" : "f30k",
-  "val_txt_db": "/txt/itm_flickr30k_val.db",
-  "val_img_db": "/img/flickr30k/",
-  "model": "openai/clip-vit-base-patch32",
-  "single_caption": true
+  "root": "/data/Guohao/datasets/data/f30k",
+  "anno": "/data/Guohao/datasets/data/f30k/annotations/flickr30k_val.json",
+  "model": "openai/clip-vit-large-patch14-336",
+  "single_caption": true,
+  "batch_size":1,
+  "model_name": "ViT-B/32",
+  "measure": "cosine",
+  "data_size":1000,
+  "save_feature": true,
+  "out_dir":"",
+  "feature_visual":false,
+  "arithmic":true
 }

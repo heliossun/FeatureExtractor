@@ -9,14 +9,33 @@ import torchvision.transforms as transforms
 from torchvision.datasets.coco import CocoCaptions
 from torchvision.datasets.flickr import Flickr30k, Flickr8k
 from PIL import Image
+from utils.txt_noise import *
 import json
-def get_transform():
-    normalizer = transforms.Normalize(mean=[0.48145466, 0.4578275, 0.40821073],
-                                      std=[0.26862954, 0.26130258, 0.27577711])
-    t_list = [transforms.Resize(256), transforms.CenterCrop(224)]
 
-    t_end = [transforms.ToTensor(), normalizer]
-    transform = transforms.Compose(t_list + t_end)
+def get_txtNoise(level):
+    noise = [delete_random_token,
+            replace_random_token,
+            random_token_permutation]
+    print("noise name: ", noise[level])
+    return noise[level]
+
+
+def get_transform(level):
+    noise = [transforms.RandomAutocontrast(0.5),
+             transforms.RandomAdjustSharpness(0.5),
+             transforms.RandomInvert(0.5),
+             transforms.RandomRotation(degrees=(0, 180)),
+             transforms.RandomPosterize(bits=2),
+             transforms.GaussianBlur(kernel_size=(5, 9), sigma=(0.1, 10)),
+             transforms.RandomCrop(128),
+             transforms.functional.hflip
+             ]
+    #noise = [transforms.GaussianBlur(kernel_size=(5, 9), sigma=(0.1, 10))]
+
+    noise = noise[level:level+1]
+    transform = transforms.Compose(noise)
+    print(noise)
+
 
     return transform
 
@@ -90,12 +109,12 @@ class FlickrDataset(data.Dataset):
         return len(self.ids)
 
 def get_data(data_name, root, json, batch_size):
-    transform = get_transform()
+
     if data_name =='coco' :
         # COCO custom dataset
         dataset = CocoCaptions(root = root,
                                annFile = json,
-                               transform = transform)
+                               transform = None)
         dataset = DataLoader(dataset, batch_size = batch_size)
     elif data_name == 'coco_' :
         dataset = CocoDataset(root = root,
