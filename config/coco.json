@@ -9,5 +9,5 @@
   "measure": "cosine",
   "data_size":5000,
   "feature_visual":false,
-  "arithmic":true
+  "arithmic":false
 }

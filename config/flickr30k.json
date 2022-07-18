@@ -11,5 +11,5 @@
   "save_feature": true,
   "out_dir":"",
   "feature_visual":false,
-  "arithmic":true
+  "arithmic":false
 }

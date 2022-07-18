@@ -11,6 +11,8 @@ from torchvision.datasets.flickr import Flickr30k, Flickr8k
 from PIL import Image
 from utils.txt_noise import *
 import json
+import skimage
+
 
 def get_txtNoise(level):
     noise = [delete_random_token,
@@ -19,20 +21,69 @@ def get_txtNoise(level):
     print("noise name: ", noise[level])
     return noise[level]
 
+def noisy(noise_typ,image_path):
+    image = skimage.io.imread(image_path)/255.0
+    if noise_typ == "gauss":
+      mean = 0
+      var = 0.1
+      sigma = var**0.5
+      gauss = np.random.normal(mean,sigma,size = image.shape)
+
+      noisy_image = np.clip((image + gauss),0,1)
+      image = Image.fromarray((noisy_image*255).astype(np.uint8))
+
+      return image
+    elif noise_typ == "s&p":
+      row,col,ch = image.shape
+      s_vs_p = 0.5
+      amount = 0.004
+      out = np.copy(image)
+      # Salt mode
+      num_salt = np.ceil(amount * image.size * s_vs_p)
+      coords = [np.random.randint(0, i - 1, int(num_salt))
+              for i in image.shape]
+      out[coords] = 1
+
+      # Pepper mode
+      num_pepper = np.ceil(amount* image.size * (1. - s_vs_p))
+      coords = [np.random.randint(0, i - 1, int(num_pepper))
+              for i in image.shape]
+      out[coords] = 0
+      return out
+    elif noise_typ == "poisson":
+      vals = len(np.unique(image))
+      vals = 2 ** np.ceil(np.log2(vals))
+      noisy = np.random.poisson(image * vals) / float(vals)
+      return noisy
+    elif noise_typ =="speckle":
+      row,col,ch = image.shape
+      gauss = np.random.randn(row,col,ch)
+      gauss = gauss.reshape(row,col,ch)
+      noisy = image + image * gauss
+      return noisy
+
+def noisy2(noise_typ,image_path):
+    img = skimage.io.imread(image_path)/255.0
+    if noise_typ is not None:
+        gimg = skimage.util.random_noise(img,mode = noise_typ)
+    skimage.io.imsave("./imgPreprocess/test.png",gimg)
+    image = Image.fromarray((skimage*255).astype(np.uint8))
+    return image
+
 
 def get_transform(level):
-    noise = [transforms.RandomAutocontrast(0.5),
-             transforms.RandomAdjustSharpness(0.5),
-             transforms.RandomInvert(0.5),
-             transforms.RandomRotation(degrees=(0, 180)),
-             transforms.RandomPosterize(bits=2),
-             transforms.GaussianBlur(kernel_size=(5, 9), sigma=(0.1, 10)),
-             transforms.RandomCrop(128),
-             transforms.functional.hflip
-             ]
-    #noise = [transforms.GaussianBlur(kernel_size=(5, 9), sigma=(0.1, 10))]
+    # noise = [transforms.RandomAutocontrast(0.5),
+    #          transforms.RandomAdjustSharpness(0.5),
+    #          transforms.RandomInvert(0.5),
+    #          transforms.RandomRotation(degrees=(0, 180)),
+    #          transforms.RandomPosterize(bits=2),
+    #          transforms.GaussianBlur(kernel_size=(5, 9), sigma=(0.1, 10)),
+    #          transforms.RandomCrop(128),
+    #          transforms.functional.hflip
+    #          ]
+    #noise = noise[level:level+1]
 
-    noise = noise[level:level+1]
+    noise = [transforms.GaussianBlur(kernel_size=(5, 9), sigma=(0.1, 10))]
     transform = transforms.Compose(noise)
     print(noise)
 

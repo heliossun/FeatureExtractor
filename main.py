@@ -47,12 +47,16 @@ def encoder(dataset,model, processor,opts, transform=None, txt_noise=None):
         txts = dataset[img_ids[i]][1]
         #txt noise:
         #txts = [txt_noise(i) for i in txts]
-        #image transform
-        #image = transform(image)
+
         #add mask:
         #image = add_mask(img_path)
         #rawimage:
         image = Image.open(img_path).convert('RGB')
+        #image transform
+        #image = transform(image)
+        #image = data.noisy("gauss", img_path)
+
+        #image.save(f"./imgPreprocess/{img_ids[i]}.png")
         inputs = processor(text=txts, images=image, return_tensors="pt", padding=True)
         inputs = {k: v.to('cuda') for k, v in inputs.items()}
         outputs = model(**inputs)
@@ -101,12 +105,14 @@ def encoder(dataset,model, processor,opts, transform=None, txt_noise=None):
     # cap_embs=txt_embeds.detach().cpu().numpy().copy()
     # print(img_embs.shape)
     # print(cap_embs.shape)
+    np.save('hg_pruned_features/' + str(opts.dataname) + str(opts.data_size) + 'img'  + '.npy', img_embs)
+    np.save('hg_pruned_features/' + str(opts.dataname) + str(opts.data_size) + 'txt'  + '.npy', cap_embs)
     return img_embs, cap_embs
 
 def validate(valid_dataloader, model, processor, opts):
 
 
-    #transform = data.get_transform(i)
+    #transform = data.get_transform(0)
     #txt_noise = data.get_txtNoise(i)
     img_embs, cap_embs = encoder(valid_dataloader,model, processor,opts,transform=None, txt_noise=None)
     if opts.feature_visual:
@@ -133,6 +139,7 @@ def main(opts):
 
     val_data = data.get_data(opts.dataname, opts.root, opts.anno, opts.batch_size)
     model = CLIPModel.from_pretrained(opts.model).cuda()
+    model.eval()
     processor = CLIPProcessor.from_pretrained(opts.model)
     validate(val_data, model, processor, opts)
 
